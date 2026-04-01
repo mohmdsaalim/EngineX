@@ -1,4 +1,4 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; -- this is global i can use the func everywhere
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; -- this is global i can use the func "uuid_generate_v4()" everywhere
 
 CREATE TABLE users (
     id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
