@@ -1,23 +1,30 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"os"
+	"context"
+	"log"
+
+	"github.com/joho/godotenv"
+	"github.com/mohmdsaalim/EngineX/internal/config"
+	repository "github.com/mohmdsaalim/EngineX/internal/repository/generated"
 )
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8082"
-	}
-	fmt.Printf("Starting engine on port %s\n", port)
-	
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "engine is healthy\n")
-	})
-	
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		fmt.Printf("Error starting engine: %v\n", err)
-	}
+    godotenv.Load()
+
+    cfg := config.Load()
+    ctx := context.Background()
+
+    pool, err := config.NewPgxPool(ctx, cfg.PostgresDSN)
+    if err != nil {
+        log.Fatalf("db connect: %v", err)
+    }
+    defer pool.Close()
+
+    queries := repository.New(pool)
+    _ = queries // wire into services next
+
+    log.Println("authsvc started")
+    // gRPC server goes here — Day 3 task
+    select {}
 }
