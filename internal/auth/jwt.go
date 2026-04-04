@@ -62,7 +62,7 @@ func (m *JWTManager) GenerateRefreshToken(userID string) (string, error) {
 	}
 	return signed, nil
 }
-
+// -> 
 // token validation func 
 func (m *JWTManager) ValidateToken(tokenStr string) (*Claims, error){
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{},
