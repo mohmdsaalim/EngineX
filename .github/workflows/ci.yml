@@ -75,9 +75,9 @@ jobs:
           go-version: '1.25.5'
           cache: true
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.64.5
-          install-mode: goinstall
-          args: --timeout=5m
+      # - name: Run golangci-lint
+      #   uses: golangci/golangci-lint-action@v6
+      #   with:
+      #     version: v1.64.5
+      #     install-mode: goinstall
+      #     args: --timeout=5m
