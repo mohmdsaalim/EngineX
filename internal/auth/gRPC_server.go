@@ -26,7 +26,7 @@ func NewGRPCServer(svc *Service) *GRPCServer {
 func (g *GRPCServer) ValidateToken(ctx context.Context, req *gRPCauth.ValidateTokenRequest) (*gRPCauth.ValidateTokenResponse, error){
 	claims, err := g.service.ValidateToken(ctx, req.Token)// pushing the token into -> auth/service 
 	if err != nil{
-		return &gRPCauth.ValidateTokenResponse{Valid: false}, nil
+		return &gRPCauth.ValidateTokenResponse{Valid: false}, nil // checking passed
 	}
 	return &gRPCauth.ValidateTokenResponse{
 		Valid: true,
