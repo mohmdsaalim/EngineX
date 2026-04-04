@@ -76,7 +76,7 @@ func (s *Service) Login(ctx context.Context, email, password string) (accessToke
 	}
 
 	// Store refresh token in redis 
-	key := constants.RedisKeyBalance + userIDStr
+	key := constants.RedisKeySession + userIDStr
 	if err := s.redis.Set(ctx, key, refreshToken, 7*24*time.Hour); err != nil{
 		return "", "", apperr.Wrap(apperr.CodeInternal, "failed to store session", err)
 	}
