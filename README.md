@@ -10,5 +10,5 @@ day 2 -> installed -> go install -tags 'postgres' github.com/golang-migrate/migr
 	•	Data consistency ✅
 	•	Faster comparisons than strings ⚡
 	•	Safer logic in backend (Go/Kafka consumers)
-
+// CI pipeline working ✅ passed all the test
 loading............
