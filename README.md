@@ -1,4 +1,6 @@
 docker compose up -d -> run docker
+docker compose down ----------> data exist here 
+docker compose up ------------> run docker 
 
 docker compsoe down -v stop the docker 
 
@@ -14,20 +16,20 @@ day 2 -> installed -> go install -tags 'postgres' github.com/golang-migrate/migr
 // finded the isuue of redis
 loading............
 
-// register user via 
+// ///////////////////. register user via //////////////////////
 grpcurl -plaintext \
   -d '{"email":"test@test.com","password":"password123","full_name":"Test User"}' \
   localhost:9091 \
   auth.v1.AuthService/Register
 
 
-  Login
+  //////////////////////// Login /////////////////
   grpcurl -plaintext \
   -d '{"email":"test@test.com","password":"password123"}' \
   localhost:9091 \
   auth.v1.AuthService/Login
 
-validate
+/////////////////// validate ///////////////
 grpcurl -plaintext \
   -d '{"token":" put token here "}' \
   localhost:9091 \

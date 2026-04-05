@@ -1,0 +1,27 @@
+syntax = "proto3";
+package risk.v1;
+option go_package = "github.com/yourname/order-engine/api/gen/risk";
+
+enum Side {
+  SIDE_UNSPECIFIED = 0;
+  SIDE_BUY         = 1;
+  SIDE_SELL        = 2;
+}
+
+message CheckOrderRequest {
+  string user_id  = 1;
+  string order_id = 2;
+  string symbol   = 3;
+  Side   side     = 4;
+  int64  price    = 5;  // scaled int — 1500.50 = 150050
+  int64  quantity = 6;
+}
+
+message CheckOrderResponse {
+  bool   approved     = 1;
+  string reject_reason = 2;  // empty if approved
+}
+
+service RiskService {
+  rpc CheckOrder (CheckOrderRequest) returns (CheckOrderResponse);
+}
