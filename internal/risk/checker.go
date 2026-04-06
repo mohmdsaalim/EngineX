@@ -53,7 +53,7 @@ func (c Checker) CheckOrder(ctx context.Context, req OrderRequest) error {
     //         return err
     //     }
     // }
-	
+
 	// 3 duplicate order chek
 	if err := c.checkDuplicate(ctx, req.orderID); err != nil{
 		return err
@@ -127,7 +127,9 @@ func (c *Checker) checkDuplicate(ctx context.Context, orderID string) error{
 	return nil
 }
 
+// positin not setuped in DB
 // // checkPosition verifies user holds enough quantity for SELL order.
+
 // func (c *Checker) checkPosition(ctx context.Context, req OrderRequest) error {
 //     var pgUUID pgtype.UUID
 //     if err := pgUUID.Scan(req.UserID); err != nil {
