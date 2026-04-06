@@ -21,7 +21,7 @@ func main() {
     cfg := config.Load() //. config load
     ctx := context.Background() 
 
-    pool, err := config.NewPgxPool(ctx, cfg.PostgresDSN)
+    pool, err := config.NewPgxPool(ctx, cfg.PostgresDSN) // postgres connct
     if err != nil {
         log.Fatalf("db connect: %v", err)
     }
@@ -51,7 +51,5 @@ func main() {
     if err := srv.Serve(lis); err!= nil{
         log.Fatalf(" serve: %v", err)
     }
-
-    // gRPC server goes here — Day 3 task
-    // select {}
+    // graceful shutdown pending............
 }
