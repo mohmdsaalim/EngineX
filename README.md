@@ -2,7 +2,7 @@ docker compose up -d -> run docker
 docker compose down ----------> data exist here 
 docker compose up ------------> run docker 
 
-docker compsoe down -v stop the docker 
+docker compsoe down -v stop the docker  nad wipe data
 
 i am using Event-driven microservices architecture. in this project 
 
@@ -14,6 +14,8 @@ day 2 -> installed -> go install -tags 'postgres' github.com/golang-migrate/migr
 	•	Safer logic in backend (Go/Kafka consumers)
 // CI pipeline working ✅ passed all the test
 // finded the isuue of redis
+
+
 loading............
 
 // ///////////////////. register user via //////////////////////
