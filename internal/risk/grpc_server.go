@@ -2,6 +2,7 @@ package risk
 
 import (
 	"context"
+	// "log"
 
 	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_risk"
 	"github.com/mohmdsaalim/EngineX/pkg/apperr"
@@ -31,7 +32,8 @@ func (g *GRPCServer) CheckOrder(ctx context.Context, req *gRPC_risk.CheckOrderRe
 	}
 
 	sideStr := "BUY"
-	if req.Side == gRPC_risk.Side_SIDE_BUY{
+	// log.Printf("side received: %v", req.Side)
+	if req.Side == gRPC_risk.Side_SIDE_SELL{
 		sideStr = "SELL"
 	} // logic is confusing need to rechek and study////////////////////////
 

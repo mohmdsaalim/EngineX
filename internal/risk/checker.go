@@ -47,7 +47,13 @@ func (c Checker) CheckOrder(ctx context.Context, req OrderRequest) error {
 	if err := c.checkBalance(ctx, req); err != nil{
 		return err
 	}
-}
+	}
+	//  else {
+    //     if err := c.checkPosition(ctx, req); err != nil {
+    //         return err
+    //     }
+    // }
+	
 	// 3 duplicate order chek
 	if err := c.checkDuplicate(ctx, req.orderID); err != nil{
 		return err
@@ -120,3 +126,26 @@ func (c *Checker) checkDuplicate(ctx context.Context, orderID string) error{
 	}
 	return nil
 }
+
+// // checkPosition verifies user holds enough quantity for SELL order.
+// func (c *Checker) checkPosition(ctx context.Context, req OrderRequest) error {
+//     var pgUUID pgtype.UUID
+//     if err := pgUUID.Scan(req.UserID); err != nil {
+//         return apperr.Wrap(apperr.CodeInternal, "invalid userID", err)
+//     }
+
+//     position, err := c.queries.GetPositionByUserAndSymbol(ctx, repository.GetPositionByUserAndSymbolParams{
+//         UserID: pgUUID,
+//         Symbol: req.Symbol,
+//     })
+//     if err != nil {
+//         return apperr.Wrap(apperr.CodeInternal, "failed to fetch position", err)
+//     }
+
+//     available := position.Quantity - position.LockedQty
+//     if available < req.Quantity {
+//         return apperr.New(apperr.CodeInsufficientBal,
+//             fmt.Sprintf("insufficient position: have %d need %d", available, req.Quantity))
+//     }
+//     return nil
+// }

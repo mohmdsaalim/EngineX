@@ -12,3 +12,5 @@ POSTMAN CECK
 
 --- Risk Service ---
 /CheckOrder     not checked yet ❌
+Test 1: Valid order ✅
+Test 2: Insufficient balance ✅
