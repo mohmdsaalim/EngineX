@@ -3,10 +3,16 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 
 	"github.com/joho/godotenv"
+	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_risk"
+	"github.com/mohmdsaalim/EngineX/internal/cache"
 	"github.com/mohmdsaalim/EngineX/internal/config"
 	repository "github.com/mohmdsaalim/EngineX/internal/repository/generated"
+	"github.com/mohmdsaalim/EngineX/internal/risk"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -17,14 +23,32 @@ func main() {
 
     pool, err := config.NewPgxPool(ctx, cfg.PostgresDSN)
     if err != nil {
-        log.Fatalf("db connect: %v", err)
+        log.Fatalf("db connect postgres: %v", err)
     }
     defer pool.Close()
-
+    // redis 
+    redisClient, err := cache.NewRedisClient(cfg.RedisAddr, cfg.RedisPassword)
+    if err != nil{
+        log.Fatalf("redis: %v", err)
+    }
+ // 3 depndcy injection
     queries := repository.New(pool)
-    _ = queries // wire into services next
+    checker := risk.NewChecker(redisClient, queries)
+    grpcServer := risk.NewGRPCServer(checker)
 
-    log.Println("authsvc started")
-    // gRPC server goes here — Day 3 task
-    select {}
+    // 4 Start gRPC
+    lis, err := net.Listen("tcp", cfg.RiskGRPCPort)
+    if err != nil{
+        log.Fatalf("Listen: %v ", err)
+    }
+
+    srv := grpc.NewServer()
+    gRPC_risk.RegisterRiskServiceServer(srv, grpcServer)
+    reflection.Register(srv)
+
+    log.Printf("risksvc gRPC listening on %s", cfg.RiskGRPCPort)
+    if err := srv.Serve(lis); err != nil{
+        log.Fatalf("serve: %v", err)
+    }
+    
 }
