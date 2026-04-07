@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package order.v1;
+
+option go_package = "github.com/mohmdsaalim/EngineX/api/gen/gRPC_order;gRPC_order";
+
+message OrderMessage {
+  string order_id   = 1;
+  string user_id    = 2;
+  string symbol     = 3;
+  string side       = 4;
+  string type       = 5;
+  int64  price      = 6;
+  int64  quantity   = 7;
+  int64  created_at = 8;
+}
+
+message OrderResponse {
+  string status = 1;
+  string message = 2;
+}
+
+service OrderService {
+  rpc CreateOrder (OrderMessage) returns (OrderResponse);
+}

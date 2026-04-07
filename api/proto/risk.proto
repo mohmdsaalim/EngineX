@@ -1,6 +1,6 @@
 syntax = "proto3";
 package risk.v1;
-option go_package = "github.com/yourname/order-engine/api/gen/risk";
+option go_package = "github.com/mohmdsaalim/EngineX/internal/risk";
 
 enum Side {
   SIDE_UNSPECIFIED = 0;
