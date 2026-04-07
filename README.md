@@ -36,4 +36,4 @@ grpcurl -plaintext \
   -d '{"token":" put token here "}' \
   localhost:9091 \
   auth.v1.AuthService/ValidateToken
-  
+  // after gateway need check up whole application test 👽
