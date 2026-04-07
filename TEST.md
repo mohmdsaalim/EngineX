@@ -17,4 +17,4 @@ Test 2: Insufficient balance ✅
 
 
 --- gateway -----
-pending all process
+pending all process , need to convert the kafka message JSON -> protobuffs 

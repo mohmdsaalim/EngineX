@@ -15,7 +15,7 @@ func NewPgxPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
         return nil, fmt.Errorf("parse pgx config: %w", err)
     }
 
-    // Pool settings — production ready
+    // Pool settings — production ready 
     config.MaxConns = 20
     config.MinConns = 2
 
