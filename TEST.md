@@ -11,6 +11,10 @@ POSTMAN CECK
 /Validation(token)✅
 
 --- Risk Service ---
-/CheckOrder     not checked yet ❌
+/CheckOrder     ✅
 Test 1: Valid order ✅
 Test 2: Insufficient balance ✅
+
+
+--- gateway -----
+pending all process
