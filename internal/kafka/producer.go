@@ -1,10 +1,35 @@
 package kafka
-//  Currently my gateway/kafka_producer.go creates its own kafka.Writer directly with Async: false and RequireAcks: RequireOne, which is a performance bottleneck.
-// I want to:
 
-// Refactor so internal/kafka/producer.go is the single reusable producer
-// Switch to Async: true with proper error handling via error callback
-// Have gateway/kafka_producer.go reuse that base producer instead of creating its own writer
-// Maintain partition ordering by symbol key (Hash balancer — keep this)
+import (
+	"context"
 
-// Show me the refactored code for both files following industry standard high-performance Kafka producer patterns in Go."
+	"github.com/segmentio/kafka-go"
+)
+
+type Producer struct {
+	writer *kafka.Writer
+}
+
+func NewProducer( broker string) *Producer {
+	writer := &kafka.Writer{
+		Addr: kafka.TCP(broker),
+		Balancer: &kafka.Hash{},
+		RequiredAcks: kafka.RequireOne,
+		Async: true,
+		AllowAutoTopicCreation: true,
+		ErrorLogger: kafka.LoggerFunc(func(s string, i ...interface{}) {}),
+	}
+	return &Producer{writer: writer}
+}
+
+func (p *Producer) Publish(ctx context.Context, topic, key string, value []byte)error {
+	return p.writer.WriteMessages(ctx, kafka.Message{
+		Topic: topic,
+		Key: []byte(key),
+		Value: value,
+	})
+}
+
+func (p *Producer) Close() error {
+	return p.writer.Close()
+}
