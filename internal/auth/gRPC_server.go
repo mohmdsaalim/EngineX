@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 
-	"github.com/mohmdsaalim/EngineX/api/gen/gRPCauth"
+	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_auth"
 	"github.com/mohmdsaalim/EngineX/pkg/apperr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

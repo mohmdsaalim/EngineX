@@ -6,7 +6,7 @@ import (
 	"net"
 
 	"github.com/joho/godotenv"
-	"github.com/mohmdsaalim/EngineX/api/gen/gRPCauth"
+	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_auth"
 	"github.com/mohmdsaalim/EngineX/internal/auth"
 	"github.com/mohmdsaalim/EngineX/internal/cache"
 	"github.com/mohmdsaalim/EngineX/internal/config"

@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	gRPCauth "github.com/mohmdsaalim/EngineX/api/gen/gRPCauth"
+	gRPCauth "github.com/mohmdsaalim/EngineX/api/gen/gRPC_auth"
 	"github.com/mohmdsaalim/EngineX/pkg/apperr"
 	"github.com/mohmdsaalim/EngineX/pkg/response"
 )
