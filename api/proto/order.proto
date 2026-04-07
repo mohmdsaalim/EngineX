@@ -1,8 +1,6 @@
 syntax = "proto3";
-
-package order.v1;
-
-option go_package = "github.com/mohmdsaalim/EngineX/api/gen/gRPC_order;gRPC_order";
+package orderbook.v1;
+option go_package = "github.com/mohmdsaalim/EngineX/api/gen/gRPC_order";
 
 message OrderMessage {
   string order_id   = 1;
@@ -15,11 +13,27 @@ message OrderMessage {
   int64  created_at = 8;
 }
 
-message OrderResponse {
-  string status = 1;
-  string message = 2;
+enum Side { SIDE_UNSPECIFIED = 0; SIDE_BUY = 1; SIDE_SELL = 2; }
+enum OrderType { ORDER_TYPE_UNSPECIFIED = 0; ORDER_TYPE_LIMIT = 1; ORDER_TYPE_MARKET = 2; }
+
+message Order {
+    string    order_id   = 1;
+    string    user_id    = 2;
+    string    symbol     = 3;
+    Side      side       = 4;
+    OrderType order_type = 5;
+    int64     price      = 6;  // ₹1500.50 → 150050
+    int64     quantity   = 7;
+    int64     timestamp  = 8;
 }
 
-service OrderService {
-  rpc CreateOrder (OrderMessage) returns (OrderResponse);
+message Trade {
+    string trade_id   = 1;
+    string buy_order  = 2;
+    string sell_order = 3;
+    string symbol     = 4;
+    int64  price      = 5;
+    int64  quantity   = 6;
+    int64  timestamp  = 7;
 }
+// "github.com/mohmdsaalim/EngineX/api/gen/gRPC_order;gRPC_order";

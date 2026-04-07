@@ -2,15 +2,16 @@ package gateway
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_order"
 	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_risk"
 	"github.com/mohmdsaalim/EngineX/pkg/apperr"
 	"github.com/mohmdsaalim/EngineX/pkg/response"
+	"google.golang.org/protobuf/proto"
 )
 
 type Handler struct {
@@ -93,20 +94,17 @@ if !riskResp.Approved{
 	return
 }
 
-// Build kafka msg
-
-msg := OrderMessage{
-	OrderID: orderID,
-	UserID: userID,
+// chnaged JSON to Protobufs
+payload, err := proto.Marshal(&gRPC_order.OrderMessage{
+	OrderId: orderID,
+	UserId: userID,
 	Symbol: req.Symbol,
 	Side: req.Side,
 	Type: req.Type,
 	Price: req.Price,
 	Quantity: req.Quantity,
-	CreatedAt: time.Now(),
-}
-
-payload, err := json.Marshal(msg)
+	CreatedAt: time.Now().UnixNano(),
+})
 
 if err != nil{
 	response.Fail(c, apperr.New(apperr.CodeInternal, "failed to serialize order"))
