@@ -10,6 +10,11 @@
 // engine kafka
 
 
+currenlty
+
+study B-TREE DS
+core engine visual flow diagram and unserstd proper workflow
+
 
 commands
 
