@@ -35,7 +35,7 @@ func (g *GRPCServer) CheckOrder(ctx context.Context, req *gRPC_risk.CheckOrderRe
 	// log.Printf("side received: %v", req.Side)
 	if req.Side == gRPC_risk.Side_SIDE_SELL{
 		sideStr = "SELL"
-	} // logic is confusing need to rechek and study////////////////////////
+	} 	// logic is confusing need to rechek and study////////////////////////
 
 	err := g.checker.CheckOrder(ctx, OrderRequest{
 		UserID:   req.UserId,

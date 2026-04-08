@@ -11,6 +11,7 @@ import (
 	"github.com/mohmdsaalim/EngineX/internal/config"
 	repository "github.com/mohmdsaalim/EngineX/internal/repository/generated"
 	"github.com/mohmdsaalim/EngineX/internal/risk"
+	"github.com/mohmdsaalim/EngineX/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -42,7 +43,10 @@ func main() {
         log.Fatalf("Listen: %v ", err)
     }
 
-    srv := grpc.NewServer()
+    syslog := logger.New("risksvc")
+    srv := grpc.NewServer(
+        grpc.UnaryInterceptor(logger.GRPCLoggerInterceptor(syslog)),
+    )
     gRPC_risk.RegisterRiskServiceServer(srv, grpcServer)
     reflection.Register(srv)
 

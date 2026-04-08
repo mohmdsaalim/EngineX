@@ -1,5 +1,5 @@
 package auth
-
+// log, reg, val
 import (
 	"context"
 	"time"
@@ -24,6 +24,7 @@ func NewService(queries *repository.Queries,redis *cache.RedisClient, JWTManager
 		JWTManager: JWTManager,
 	}
 }
+
 //. Register -> create new user
 func (s *Service) Register(ctx context.Context, email, password, fullName string)(*repository.User, error) {
 	// checking user alreay exist 

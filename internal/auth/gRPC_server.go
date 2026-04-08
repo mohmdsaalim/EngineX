@@ -1,5 +1,5 @@
 package auth
-
+// work like controller
 import (
 	"context"
 

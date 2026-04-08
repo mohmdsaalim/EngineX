@@ -11,6 +11,7 @@ import (
 	"github.com/mohmdsaalim/EngineX/internal/cache"
 	"github.com/mohmdsaalim/EngineX/internal/config"
 	repository "github.com/mohmdsaalim/EngineX/internal/repository/generated"
+	"github.com/mohmdsaalim/EngineX/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -43,7 +44,10 @@ func main() {
     if err != nil{
         log.Fatalf("falied authgrpc listen: %v", err)
     }
-    srv := grpc.NewServer()
+    syslog := logger.New("authsvc")
+    srv := grpc.NewServer(
+        grpc.UnaryInterceptor(logger.GRPCLoggerInterceptor(syslog)),
+    )
     gRPCauth.RegisterAuthServiceServer(srv, grpcServer)
     reflection.Register(srv)
     
