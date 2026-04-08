@@ -44,8 +44,10 @@ func main() {
 	riskClient := gRPC_risk.NewRiskServiceClient(riskConn)
 
 	// 4. Kafka producer
-	kafkaProducer := gateway.NewKafkaProducer(&kafka.Producer{})
-	// defer kafkaProducer.Close()
+	baseProducer := kafka.NewProducer(cfg.KafkaBroker)
+	defer baseProducer.Close()
+	
+	kafkaProducer := gateway.NewKafkaProducer(baseProducer)
 
 	// 5. Wire handler
 	handler := gateway.NewHandler(riskClient, kafkaProducer)
