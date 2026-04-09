@@ -1,5 +1,5 @@
 // migration - db models
-// db-model sqlc + pgxpool
+// db-model sqlc + pgxpool + pg connection 
 // global err and rsponce 
 // .env 
 // kafka topics 3 
@@ -9,10 +9,9 @@
 // gateway http 
 // engine kafka
 
-
 currenlty
 
-study B-TREE DS
+studing B-TREE DS
 core engine visual flow diagram and unserstd proper workflow
 
 
