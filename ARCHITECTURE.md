@@ -21,3 +21,6 @@ Descend() for bids. Eliminates auxiliary sorted slice.
 ## Why int64 for prices, not float64?
 IEEE 754 floating-point comparison bugs. 1500.0 == 1500.0 may fail.
 Integer comparison is always exact.
+
+
+// need to update the arch note
