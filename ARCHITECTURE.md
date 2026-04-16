@@ -26,3 +26,4 @@ Integer comparison is always exact.
 // need to update the arch note
 // tommarrow start the entire engine logics and read the cloude plan 
 // starting the ENGINE
+// updateed the balance 
