@@ -7,6 +7,8 @@ import (
 
 	"github.com/mohmdsaalim/EngineX/internal/constants"
 )
+
+
 // GetBalance reads user's available balance from Redis.
 // Returns balance in scaled int64 (100 = ₹1.00)
 func (r *RedisClient) GetBalance(ctx context.Context, userID string) (int64, error){
@@ -25,7 +27,7 @@ func (r *RedisClient) GetBalance(ctx context.Context, userID string) (int64, err
 	return balance, nil
 }
 
-// set balace into Redis
+// set balace into Redis 
 func (r *RedisClient) SetBalance(ctx context.Context, userID string, balance int64) error{
 	key := constants.RedisKeyBalance + userID
 	return r.Set(ctx, key, strconv.FormatInt(balance, 10), 0) // no TTL - permamanet
