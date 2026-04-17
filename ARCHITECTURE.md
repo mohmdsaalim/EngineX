@@ -23,7 +23,4 @@ IEEE 754 floating-point comparison bugs. 1500.0 == 1500.0 may fail.
 Integer comparison is always exact.
 
 
-// need to update the arch note
-// tommarrow start the entire engine logics and read the cloude plan 
-// starting the ENGINE
-// updateed the balance 
+// completed the engine need to write the test file and check it 
