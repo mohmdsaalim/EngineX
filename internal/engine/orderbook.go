@@ -5,7 +5,10 @@ import (
 )
 
 const btreeDegree = 32 
-
+// OrderBook holds all bids and asks for one symbol.
+// Bids: descending — highest price first (best bid on top)
+// Asks: ascending  — lowest price first (best ask on top)
+// Uses B-tree for O(log n) insert/delete with natural sort order.
 type OrderBook struct {
 	Symbol string
 	Bids *btree.BTreeG[*PriceLevel]
@@ -21,7 +24,6 @@ func NewOrderBook(symbol string) *OrderBook {
 		Bids: btree.NewG(btreeDegree, func(a, b *PriceLevel)bool{
 				return a.Price > b.Price
 		}),
-
 		// Asks - ascending : lowest price has prirty
 		Asks: btree.NewG(btreeDegree, func(a, b *PriceLevel) bool {
 			return a.Price < b.Price
