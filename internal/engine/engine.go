@@ -55,7 +55,7 @@ func (e *Engine) ProcessOrder(ctx context.Context, msg *gRPC_order.OrderMessage)
 		ID: msg.OrderId,
 		UserID: msg.UserId,
 		Symbol: msg.Symbol,
-		Side: paraseSide(msg.Side),
+		Side: parseSide(msg.Side),
 		Type: parseType(msg.Type),
 		Price: msg.Price,
 		Quantity: msg.Quantity,
@@ -98,7 +98,7 @@ func (e *Engine) publishSnapshot(ctx context.Context, book *OrderBook) error {
 }
 
 // parseSide convert proto string to internal side type. 
-func paraseSide(s string) Side {
+func parseSide(s string) Side {
 	if s == "SELL"{
 		return Sell
 	}
