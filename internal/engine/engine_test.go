@@ -7,9 +7,7 @@ import (
 )
 
 func TestEngineGetOrCreateBook(t *testing.T) {
-	e := &Engine{
-		books: make(map[string]*OrderBook),
-	}
+	e := NewEngine(nil)
 
 	book1 := e.getOrCreateBook("INFY")
 	book2 := e.getOrCreateBook("INFY")
