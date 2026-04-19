@@ -11,7 +11,6 @@ import (
 	"github.com/mohmdsaalim/EngineX/internal/kafka"
 	"github.com/mohmdsaalim/EngineX/pkg/logger"
 	"google.golang.org/protobuf/proto"
-	// "google.golang.org/grpc/encoding/proto"
 )
 
 // Engine manages one orderbook per symbol.
