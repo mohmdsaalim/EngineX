@@ -50,7 +50,7 @@ func main() {
 	kafkaProducer := gateway.NewKafkaProducer(baseProducer)
 
 	// 5. Wire handler
-	handler := gateway.NewHandler(riskClient, kafkaProducer)
+	handler := gateway.NewHandler(riskClient, kafkaProducer, authClient)
 
 	// 6. Setup Gin
 	r := gin.Default()

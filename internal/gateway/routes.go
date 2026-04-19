@@ -8,8 +8,9 @@ import (
 func SetupRoutes(r *gin.Engine, h *Handler, authClient gRPCauth.AuthServiceClient)  {
 	// Health - no Auth 
 	r.GET("/health", h.Health)
-	// Login
-	// register
+	// login-register
+	r.POST("/api/v1/auth/register", h.Register)
+	r.POST("/api/v1/auth/login",  h.Login)
 
 	// Protected routes - JWT needed
 	v1 := r.Group("api/v1")

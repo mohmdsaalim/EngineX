@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	gRPCauth "github.com/mohmdsaalim/EngineX/api/gen/gRPC_auth"
 	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_order"
 	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_risk"
 	"github.com/mohmdsaalim/EngineX/pkg/apperr"
@@ -15,12 +16,14 @@ import (
 )
 
 type Handler struct {
+	authClient gRPCauth.AuthServiceClient
 	riskClient gRPC_risk.RiskServiceClient
 	KafkaProducer *KafkaProducer
 }
 
-func NewHandler(riskClient gRPC_risk.RiskServiceClient,KafkaProducer *KafkaProducer ) *Handler {
+func NewHandler(riskClient gRPC_risk.RiskServiceClient,KafkaProducer *KafkaProducer, authClient gRPCauth.AuthServiceClient) *Handler {
 	return &Handler{
+		authClient: authClient,
 		riskClient: riskClient,
 		KafkaProducer: KafkaProducer,
 	}
@@ -45,6 +48,19 @@ type OrderMessage struct {
 	Price     int64     `json:"price"`
 	Quantity  int64     `json:"quantity"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+//RegisterRequest
+type RegisterRequest struct {
+	Email string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required, min=6"`
+	FullName string `json:"full_name" binding:"required"`
+}
+
+//LoginRegister
+type LoginRegister struct {
+	Email string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
 }
 
 // submitOrder handles POST/api/v1/orders
@@ -141,4 +157,50 @@ func (h *Handler) GetOrderBook(c *gin.Context) {
 // Health handles GET /healthz
 func (h *Handler) Health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+func (h *Handler) Register(c *gin.Context) {
+	var req RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil{
+		response.Fail(c, apperr.New(apperr.CodeInvalidInput, err.Error()))
+		return
+	}
+
+	resp, err := h.authClient.Register(c.Request.Context(), &gRPCauth.RegisterRequest{
+		Email: req.Email,
+		Password: req.Password,
+		FullName: req.FullName,
+	})
+
+	if err != nil{
+		response.Fail(c, apperr.New(apperr.CodeInternal, "registration failed"))
+		return
+	}
+
+	response.Created(c, gin.H{
+		"user_id": resp.UserId,
+		"email": resp.Email,
+	})
+}
+
+func (h *Handler) Login(c *gin.Context) {
+	var req LoginRegister
+	if err := c.ShouldBindJSON(&req); err != nil{
+		response.Fail(c, apperr.New(apperr.CodeInvalidInput, err.Error()))
+		return
+	}
+	resp, err := h.authClient.Login(c.Request.Context(), &gRPCauth.LoginRequest{
+		Email: req.Email,
+		Password: req.Password,
+	})
+
+	if err != nil {
+		response.Fail(c, apperr.New(apperr.CodeUnauthorized, "invalid creadentails"))
+		return
+	}
+
+	response.OK(c, gin.H{
+		"access_token":resp.AccessToken,
+		"refresh_token":resp.RefreshToken,
+	})
 }
