@@ -24,3 +24,20 @@ Integer comparison is always exact.
 // completed the engine need to write the test file and check it 
 // tommarrow need fincsh the all oending in cloude tasks and start the freelance and leetcode basics revising deadline
 // studying about the freelance working building a team for the works
+
+
+
+
+
+✅ Step 1  — Topics exist with 6 partitions
+✅ Step 2  — Kafka consumer terminal open
+✅ Step 5  — SELL order returns 202
+✅ Step 6  — Binary protobuf message in orders.submitted
+✅ Step 7  — Partition offset incremented
+✅ Step 8  — Engine log shows order processed, trades:0
+✅ Step 9  — orderbook.updates has JSON snapshot
+✅ Step 10 — No unmarshal errors in engine
+✅ Step 11 — BUY order returns 202
+✅ Step 12 — trades.executed has trade message
+✅ Step 13 — Trade in Postgres, balances updated, orders FILLED
+✅ Step 14 — Redis has trade:* and order:seen:* keys
