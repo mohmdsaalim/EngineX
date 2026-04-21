@@ -96,7 +96,6 @@ func (ob *OrderBook) Cancel(orderID string) bool {
 }
 
 
-
 // Snapshot returns top 5 price levels for bids and asks.
 // Send to WS Hub via kafka orderbook.updated topic.
 func (ob *OrderBook) Snapshot(depth int) DepthSnapshot{

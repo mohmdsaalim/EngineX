@@ -20,3 +20,10 @@ func SetupRoutes(r *gin.Engine, h *Handler, authClient gRPCauth.AuthServiceClien
 		v1.GET("/orderbook/:symbol", h.GetOrderBook)
 	}
 }
+// kafka order.submitted commant 
+// docker exec engine_kafka /opt/kafka/bin/kafka-console-consumer.sh \
+//   --bootstrap-server localhost:9092 \
+//   --topic orders.submitted \
+//   --from-beginning \
+//   --property print.key=true \
+//   --property print.timestamp=true

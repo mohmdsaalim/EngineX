@@ -44,3 +44,8 @@ grpcurl -plaintext \
   proto file is there but not pb.go file 
 
   after update need to chna the kafka msg to protobufsss
+
+
+
+
+  make run-auth & make run-risk & make run-gateway & make run-engine & make run-executor & make run-wshub
