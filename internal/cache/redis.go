@@ -44,3 +44,7 @@ func (r *RedisClient) Get(ctx context.Context, key string) (string, error) {
 func (r *RedisClient) Delete(ctx context.Context, key string) error {
 	return r.client.Del(ctx, key).Err()
 }
+
+func (r *RedisClient) Close() error {
+	return r.client.Close()
+}
