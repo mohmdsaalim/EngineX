@@ -66,8 +66,8 @@ func TestSnapshot(t *testing.T)  {
 	book.addToBook(&Order{ID: "a1", UserID: "a1", Side: Sell, Type: Limit, Price: 151000, Quantity: 50})
 
 	snap := book.Snapshot(5)
-	assert.Equal(t, snap.Bids, 1)
+	assert.Len(t, snap.Bids, 1)
 	assert.Len(t, snap.Asks, 1)
 	assert.Equal(t, int64(150000), snap.Bids[0].Price)
-	assert.Equal(t, int64(151000), snap.Bids[0].Price)
+	assert.Equal(t, int64(151000), snap.Asks[0].Price)
 }
