@@ -19,12 +19,12 @@ type TradeMessage struct {
 	ID          string    `json:"id"`
 	BuyOrderID  string    `json:"buy_order_id"`
 	SellOrderID string    `json:"sell_order_id"`
-	BuyerID     string    `json:"buyer_id"`
-	SellerID    string    `json:"seller_id"`
-	Symbol      string    `json:"symbol"`
-	Price       int64     `json:"price"`
-	Quantity    int64     `json:"quantity"`
-	ExecutedAt  time.Time `json:"executed_at"`
+	BuyerID    string    `json:"buyer_id"`
+	SellerID   string    `json:"seller_id"`
+	Symbol     string    `json:"symbol"`
+	Price      int64     `json:"price"`
+	Quantity   int64     `json:"quantity"`
+	ExecutedAt time.Time `json:"executed_at"`
 }
 
 type Executor struct {
@@ -52,7 +52,12 @@ func (e *Executor) ProcessTrade(ctx context.Context, raw []byte) error {
 		return fmt.Errorf("unmarshal trade: %w", err)
 	}
 
-	// 2. Idempotency check — skip if already processed
+	// 2. Validate trade fields
+	if err := e.validateTrade(trade); err != nil {
+		return fmt.Errorf("invalid trade: %w", err)
+	}
+
+	// 3. Idempotency check — skip if already processed
 	processed, err := e.redis.IsTradeProcessed(ctx, trade.ID)
 	if err != nil {
 		return fmt.Errorf("idempotency check: %w", err)
@@ -62,12 +67,12 @@ func (e *Executor) ProcessTrade(ctx context.Context, raw []byte) error {
 		return nil
 	}
 
-	// 3. Atomic Postgres transaction
+	// 4. Atomic Postgres transaction
 	if err := e.settle(ctx, trade); err != nil {
 		return fmt.Errorf("settle trade: %w", err)
 	}
 
-	// 4. Mark as processed in Redis AFTER successful DB commit
+	// 5. Mark as processed in Redis AFTER successful DB commit
 	if err := e.redis.MarkTradeProcessed(ctx, trade.ID); err != nil {
 		// Log but don't fail — trade is settled in DB
 		e.log.Error("failed to mark trade processed", "trade_id", trade.ID, "error", err)
@@ -80,6 +85,26 @@ func (e *Executor) ProcessTrade(ctx context.Context, raw []byte) error {
 		"quantity", trade.Quantity,
 	)
 
+	return nil
+}
+
+// validateTrade validates all required fields in trade message
+func (e *Executor) validateTrade(trade TradeMessage) error {
+	if trade.ID == "" {
+		return fmt.Errorf("trade ID is required")
+	}
+	if trade.BuyOrderID == "" || trade.SellOrderID == "" {
+		return fmt.Errorf("order IDs are required")
+	}
+	if trade.BuyerID == "" || trade.SellerID == "" {
+		return fmt.Errorf("user IDs are required")
+	}
+	if trade.Symbol == "" {
+		return fmt.Errorf("symbol is required")
+	}
+	if trade.Price <= 0 || trade.Quantity <= 0 {
+		return fmt.Errorf("price and quantity must be positive")
+	}
 	return nil
 }
 

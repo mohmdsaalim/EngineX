@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,26 +11,33 @@ import (
 	"github.com/mohmdsaalim/EngineX/internal/config"
 	kafkapkg "github.com/mohmdsaalim/EngineX/internal/kafka"
 	"github.com/mohmdsaalim/EngineX/internal/settlement"
+	"github.com/mohmdsaalim/EngineX/pkg/logger"
 )
 
 func main() {
 	godotenv.Load()
 	cfg := config.Load()
+
+	log := logger.New("executor")
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// 1. Postgres
 	pool, err := config.NewPgxPool(ctx, cfg.PostgresDSN)
 	if err != nil {
-		log.Fatalf("postgres: %v", err)
+		log.Error("postgres connection failed", "error", err)
+		os.Exit(1)
 	}
 	defer pool.Close()
 
 	// 2. Redis
 	redisClient, err := cache.NewRedisClient(cfg.RedisAddr, cfg.RedisPassword)
 	if err != nil {
-		log.Fatalf("redis: %v", err)
+		log.Error("redis connection failed", "error", err)
+		os.Exit(1)
 	}
+	defer redisClient.Close()
 
 	// 3. Kafka consumer
 	consumer := kafkapkg.NewConsumer(
@@ -49,33 +55,35 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-quit
-		log.Println("executor shutting down...")
+		log.Info("executor shutting down...")
 		cancel()
 	}()
 
-	log.Println("executor started — consuming trades.executed")
+	log.Info("executor started", "topic", "trades.executed")
 
 	// 6. Consume loop
 	for {
 		select {
 		case <-ctx.Done():
+			log.Info("executor stopped")
 			return
 		default:
 			msg, err := consumer.ReadMessage(ctx)
 			if err != nil {
-				log.Printf("read error: %v", err)
+				log.Error("read message failed", "error", err)
 				continue
 			}
 
+			// Process trade - commit regardless of result to prevent infinite retry
+			// The executor has idempotency protection in DB
 			if err := executor.ProcessTrade(ctx, msg.Value); err != nil {
-				log.Printf("process trade error: %v", err)
-				// Do NOT commit offset — retry on restart
-				continue
+				log.Error("process trade failed", "error", err)
 			}
 
-			// Only commit AFTER successful settlement
+			// Commit offset after each message to prevent infinite retry on failures
+			// Idempotency ensures same trade won't be processed twice
 			if err := consumer.CommitMessage(ctx, msg); err != nil {
-				log.Printf("commit error: %v", err)
+				log.Error("commit message failed", "error", err)
 			}
 		}
 	}
