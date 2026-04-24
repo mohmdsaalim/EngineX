@@ -17,7 +17,7 @@ The Engine is the core matching engine that executes trades between BUY and SELL
 │                              │                                              │
 │                              ▼                                              │
 │                     ┌──────────────┐                                        │
-│                     │ OrderBook    │ ◀──── One per symbol                    │
+│                     │ OrderBook    │ ◀──── One per symbol                   │
 │                     │ (B-Tree)     │                                        │
 │                     └──────────────┘                                        │
 │                            │                                                │
