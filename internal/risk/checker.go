@@ -3,6 +3,7 @@ package risk
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mohmdsaalim/EngineX/internal/cache"
@@ -54,7 +55,7 @@ func (c Checker) CheckOrder(ctx context.Context, req OrderRequest) error {
     //     }
     // }
 
-	// 3 duplicate order chek
+	// 3 duplicate order check
 	if err := c.checkDuplicate(ctx, req.orderID); err != nil{
 		return err
 	}
@@ -62,8 +63,11 @@ func (c Checker) CheckOrder(ctx context.Context, req OrderRequest) error {
 }
 // 1
 func (c *Checker) checkOrderSize(req OrderRequest) error {
+	if req.Price <= 0 || req.Quantity <= 0 {
+		return apperr.New(apperr.CodeInvalidInput, "order price and quantity must be greater than zero")
+	}
 	orderValue := req.Price * req.Quantity
-	if orderValue <= 0{
+	if orderValue <= 0 {
 		return apperr.New(apperr.CodeInvalidInput, "order value must be greater than zero")
 	}
 	if orderValue > maxOrderValue{
@@ -85,7 +89,7 @@ func (c *Checker) checkBalance(ctx context.Context, req OrderRequest) error {
 		// slow way -> goes to postgres 
 		available, err = c.getBalanceFromDB(ctx, req.UserID)
 		if err != nil{
-			return apperr.Wrap(apperr.CodeInternal, " failed to fetch balance", err)
+			return apperr.Wrap(apperr.CodeInternal, "failed to fetch balance", err)
 		}
 	}
 	if available < orderValue{
@@ -110,7 +114,7 @@ func (c *Checker) getBalanceFromDB(ctx context.Context, userID string) (int64, e
 
 // checkduplicate ensure same orderID not submitted twice
 func (c *Checker) checkDuplicate(ctx context.Context, orderID string) error{
-	key := "order:seen" + orderID
+	key := "order:seen:" + orderID
 	existing, err := c.redis.Get(ctx, key)
 	if err != nil{
 		return apperr.Wrap(apperr.CodeInternal, " duplicate check failed", err)
@@ -119,9 +123,8 @@ func (c *Checker) checkDuplicate(ctx context.Context, orderID string) error{
 		return apperr.New(apperr.CodeDuplicateOrder, " duplicate orderID")
 	}
 
-	// mark thuis irderID as seen - exp in 24 hrs
-
-	if err := c.redis.Set(ctx, key, "1", 24*60*60*1000000000); err != nil{
+	// mark this orderID as seen - exp in 24 hrs
+	if err := c.redis.Set(ctx, key, "1", 24*time.Hour); err != nil{
 		return apperr.Wrap(apperr.CodeInternal, "failed to mark order", err)
 	}
 	return nil

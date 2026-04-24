@@ -27,7 +27,7 @@ func (g *GRPCServer) CheckOrder(ctx context.Context, req *gRPC_risk.CheckOrderRe
 	if req.UserId == "" || req.OrderId == "" || req.Price <= 0 || req.Quantity <= 0{
 		return &gRPC_risk.CheckOrderResponse{
 			Approved: false,
-			RejectReason: "missing requied fields",
+			RejectReason: "missing required fields",
 		}, nil
 	}
 
