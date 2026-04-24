@@ -16,15 +16,18 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return true // allow all origins — restrict in production
+		origin := r.Header.Get("Origin")
+		return origin == "" || origin == "http://localhost" || origin == "https://yourdomain.com"
 	},
 }
 
 // Hub manages all WebSocket connections grouped by symbol.
+const maxClientsPerSymbol = 1000
+
 type Hub struct {
-	mu      sync.RWMutex
-	clients map[string][]*Client // symbol → clients
-	log     *slog.Logger
+	mu               sync.RWMutex
+	clients          map[string][]*Client
+	log              *slog.Logger
 }
 
 func NewHub() *Hub {
@@ -78,6 +81,10 @@ func (h *Hub) Broadcast(symbol string, msg []byte) {
 func (h *Hub) register(symbol string, c *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	if len(h.clients[symbol]) >= maxClientsPerSymbol {
+		h.log.Error("max clients limit reached", "symbol", symbol)
+		return
+	}
 	h.clients[symbol] = append(h.clients[symbol], c)
 }
 
@@ -109,16 +116,23 @@ func (h *Hub) Consume(ctx context.Context, consumer *kafkapkg.Consumer) {
 				continue
 			}
 
-			// Extract symbol from message key
 			symbol := string(msg.Key)
 			if symbol == "" {
+				consumer.CommitMessage(ctx, msg)
 				continue
 			}
 
-			// Forward raw JSON snapshot to all subscribers
-			h.Broadcast(symbol, msg.Value)
+			if len(symbol) < 1 || len(symbol) > 10 {
+				h.log.Error("invalid symbol format", "symbol", symbol)
+				consumer.CommitMessage(ctx, msg)
+				continue
+			}
 
 			consumer.CommitMessage(ctx, msg)
+			wrappedMsg := buildDepthMessage(symbol, msg.Value)
+			if wrappedMsg != nil {
+				h.Broadcast(symbol, wrappedMsg)
+			}
 		}
 	}
 }
@@ -132,7 +146,12 @@ type DepthMessage struct {
 
 func buildDepthMessage(symbol string, raw []byte) []byte {
 	var data interface{}
-	json.Unmarshal(raw, &data)
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return nil
+	}
+	if data == nil {
+		return nil
+	}
 	msg, _ := json.Marshal(DepthMessage{
 		Type:   "depth",
 		Symbol: symbol,

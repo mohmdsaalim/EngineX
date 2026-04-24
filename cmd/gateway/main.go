@@ -1,7 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -56,9 +61,21 @@ func main() {
 	r := gin.Default()
 	gateway.SetupRoutes(r, handler, authClient)
 
-	// 7. Start HTTP server
+	srv := &http.Server{
+		Addr:    cfg.GatewayPort,
+		Handler: r,
+	}
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-quit
+		log.Println("gateway shutting down...")
+		srv.Shutdown(context.Background())
+	}()
+
 	log.Printf("gateway listening on %s", cfg.GatewayPort)
-	if err := r.Run(cfg.GatewayPort); err != nil {
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("gateway: %v", err)
 	}
 

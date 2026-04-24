@@ -39,6 +39,7 @@ func main() {
 		<-quit
 		log.Println("engine shutting down...")
 		cancel()
+		producer.Close()
 	}()
 
 	log.Println("engine started — consuming orders.submitted")

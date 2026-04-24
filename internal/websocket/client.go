@@ -66,6 +66,7 @@ func (c *Client) WritePump(ctx context.Context, onDone func()) {
 				return
 			}
 			if err := c.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+				c.log.Error("write failed", "error", err)
 				return
 			}
 

@@ -57,6 +57,9 @@ func main() {
 		<-quit
 		log.Info("executor shutting down...")
 		cancel()
+		pool.Close()
+		redisClient.Close()
+		consumer.Close()
 	}()
 
 	log.Info("executor started", "topic", "trades.executed")

@@ -54,8 +54,8 @@ func main() {
 	go func() {
 		<-quit
 		log.Println("wshub shutting down...")
-		cancel()
 		srv.Shutdown(ctx)
+		cancel()
 	}()
 
 	log.Printf("wshub listening on %s", cfg.WSHubPort)

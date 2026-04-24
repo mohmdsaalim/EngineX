@@ -4,7 +4,10 @@ import (
 	"context"
 	"log"
 	"net"
-    
+	"os"
+	"os/signal"
+	"syscall"
+     
 	"github.com/joho/godotenv"
 	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_risk"
 	"github.com/mohmdsaalim/EngineX/internal/cache"
@@ -51,8 +54,17 @@ func main() {
     reflection.Register(srv)
 
     log.Printf("risksvc gRPC listening on %s", cfg.RiskGRPCPort)
-    if err := srv.Serve(lis); err != nil{
-        log.Fatalf("serve: %v", err)
-    }
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-quit
+		log.Println("risksvc shutting down...")
+		srv.GracefulStop()
+	}()
+
+	if err := srv.Serve(lis); err != nil{
+		log.Fatalf("serve: %v", err)
+	}
     
 }
