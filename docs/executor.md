@@ -107,13 +107,13 @@ Consumer.CommitMessage(msg)
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│ BEGIN TX    │────▶│ All ops OK  │────▶│ COMMIT TX  │
+│ BEGIN TX    │────▶│ All ops OK  │────▶│ COMMIT TX   │
 └─────────────┘     └─────────────┘     └─────────────┘
        │                   │
        │                   │ (any error)
        ▼                   ▼
 ┌─────────────┐     ┌─────────────┐
-│ ROLLBACK TX │     │ ROLLBACK TX  │
+│ ROLLBACK TX │     │ ROLLBACK TX │
 └─────────────┘     └─────────────┘
 ```
 
@@ -192,10 +192,10 @@ Result: Message may re-process (idempotency prevents double-settlement)
 
 ## Kafka Topics
 
-| Topic | Direction | Purpose |
-|-------|-----------|---------|
-| trades.executed | In | Engine → Executor |
-| (no output) | - | Settlement is internal (Postgres) |
+| Topic           | Direction |              Purpose              |
+|-----------------|-----------|-----------------------------------|
+| trades.executed | In        | Engine → Executor                 |
+| (no output)     | -         | Settlement is internal (Postgres) |
 
 ## Database Operations
 
@@ -219,24 +219,24 @@ Seller:
 
 ## Core Components
 
-| Component | File | Role |
-|----------|------|------|
-| Executor | cmd/executor/main.go | Entry point, consumer loop |
-| Executor | internal/settlement/executor.go | Core settlement logic |
-| TradeMessage | internal/settlement/executor.go | Trade data structure |
+| Component    |          File                   |           Role             |
+|--------------|---------------------------------|----------------------------|
+| Executor     | cmd/executor/main.go            | Entry point, consumer loop |
+| Executor.    | internal/settlement/executor.go | Core settlement logic      |
+| TradeMessage | internal/settlement/executor.go | Trade data structure       |
 
 ## Flow Summary
 
 ```
 Kafka Message → Deserialize → Validate → Idempotency Check
-                                           │
+                                             │
                             ┌────────────────┴────────────────┐
                             ▼                                 ▼
                        Already processed                    Continue
                             │                                 │
                             ▼                                 ▼
                        Skip (return)                  Atomic DB Transaction
-                                                     │
+                                                      │
                                     ┌─────────────────┼─────────────────┐
                                     ▼                 ▼                 ▼
                                INSERT trade         Update balances    Update orders
