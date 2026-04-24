@@ -1,30 +1,34 @@
 package engine
 
 import (
+	"log/slog"
+
 	"github.com/google/btree"
 )
 
-const btreeDegree = 32 
+const btreeDegree = 32
+
 // OrderBook holds all bids and asks for one symbol.
 // Bids: descending — highest price first (best bid on top)
 // Asks: ascending  — lowest price first (best ask on top)
 // Uses B-tree for O(log n) insert/delete with natural sort order.
 type OrderBook struct {
 	Symbol string
-	Bids *btree.BTreeG[*PriceLevel]
-	Asks *btree.BTreeG[*PriceLevel]
+	Bids   *btree.BTreeG[*PriceLevel]
+	Asks   *btree.BTreeG[*PriceLevel]
 	Orders map[string]*Order // orderID -> Order (for cancel lookup )
+	log    *slog.Logger
 }
 
-// NewOrderBook creates a fresh order book for a symbol. 
+// NewOrderBook creates a fresh order book for a symbol.
 func NewOrderBook(symbol string) *OrderBook {
 	return &OrderBook{
 		Symbol: symbol,
-		// Bids - descening : highst price has priority
-		Bids: btree.NewG(btreeDegree, func(a, b *PriceLevel)bool{
-				return a.Price > b.Price
+		// Bids - descending : highest price has priority
+		Bids: btree.NewG(btreeDegree, func(a, b *PriceLevel) bool {
+			return a.Price > b.Price
 		}),
-		// Asks - ascending : lowest price has prirty
+		// Asks - ascending : lowest price has priority
 		Asks: btree.NewG(btreeDegree, func(a, b *PriceLevel) bool {
 			return a.Price < b.Price
 		}),
@@ -67,15 +71,15 @@ func (ob *OrderBook) addToAsks(o *Order) {
 	}
 }
 
-// Cancel removes an order from the book. 
+// Cancel removes an order from the book and returns success.
 func (ob *OrderBook) Cancel(orderID string) bool {
 	o, exists := ob.Orders[orderID]
-	if !exists{
+	if !exists {
 		return false
 	}
 
 	tree := ob.Bids
-	if o.Side == Sell{
+	if o.Side == Sell {
 		tree = ob.Asks
 	}
 
@@ -87,10 +91,11 @@ func (ob *OrderBook) Cancel(orderID string) bool {
 				pl.Orders = append(pl.Orders[:i], pl.Orders[i+1:]...)
 			}
 		}
-		if pl.IsEmpty(){
+		if pl.IsEmpty() {
 			tree.Delete(key)
 		}
 	}
+	o.Status = StatusCancelled
 	delete(ob.Orders, orderID)
 	return true
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_order"
 	"github.com/mohmdsaalim/EngineX/internal/constants"
@@ -17,16 +18,17 @@ import (
 // each symbol runs in its own goroutine - no locking needed.
 type Engine struct {
 	books    map[string]*OrderBook
-	mu 		 sync.RWMutex
+	mu       sync.RWMutex
 	producer *kafka.Producer
-	log		 *slog.Logger
+	log      *slog.Logger
 }
-// New engine create the matching 
+
+// NewEngine creates the matching engine
 func NewEngine(producer *kafka.Producer) *Engine {
 	return &Engine{
-		books: make(map[string]*OrderBook),
+		books:    make(map[string]*OrderBook),
 		producer: producer,
-		log: logger.New("engine"),
+		log:      logger.New("engine"),
 	}
 }
 
@@ -46,19 +48,25 @@ func (e *Engine) getOrCreateBook(symbol string) *OrderBook {
 
 // ProcessOrder is called for each message from kafka orders.
 // Runs Match() and publish results back to kafka 
-func (e *Engine) ProcessOrder(ctx context.Context, msg *gRPC_order.OrderMessage) {
+func (e *Engine) ProcessOrder(ctx context.Context, msg *gRPC_order.OrderMessage) error {
+	// Validate order before processing
+	if msg == nil || msg.OrderId == "" || msg.UserId == "" || msg.Symbol == "" || msg.Quantity <= 0 {
+		return &EngineError{Code: "INVALID_ORDER", Message: "missing required fields"}
+	}
+
 	book := e.getOrCreateBook(msg.Symbol)
 
-	// Convert proto mesage to internal order
+	// Convert proto message to internal order
 	order := &Order{
-		ID: msg.OrderId,
-		UserID: msg.UserId,
-		Symbol: msg.Symbol,
-		Side: parseSide(msg.Side),
-		Type: parseType(msg.Type),
-		Price: msg.Price,
+		ID:        msg.OrderId,
+		UserID:    msg.UserId,
+		Symbol:   msg.Symbol,
+		Side:     parseSide(msg.Side),
+		Type:     parseType(msg.Type),
+		Price:    msg.Price,
 		Quantity: msg.Quantity,
-		Status: StatusOpen,
+		Status:   StatusOpen,
+		CreatedAt: time.Now(),
 	}
 
 	trades := book.Match(order)
@@ -66,24 +74,62 @@ func (e *Engine) ProcessOrder(ctx context.Context, msg *gRPC_order.OrderMessage)
 	e.log.Info("order processed", "order_id", order.ID, "symbol", order.Symbol, "trades", len(trades))
 	// Publish each trade to trades.executed
 	for _, trade := range trades {
-		if err := e.publishTrade(ctx, trade); err != nil{
+		if err := e.publishTradeWithRetry(ctx, trade); err != nil {
 			e.log.Error("publish trade failed", "error", err)
 		}
 	}
 
 	// Publish order book snapshot to order.updated
-	if err := e.publishSnapshot(ctx, book); err != nil{
+	if err := e.publishSnapshot(ctx, book); err != nil {
 		e.log.Error("publish snapshot failed", "error", err)
 	}
+
+	return nil
 }
 
-//publishtrade sends executed trade to trade.executed topic
+// EngineError represents an engine-specific error
+type EngineError struct {
+	Code    string
+	Message string
+}
+
+func (e *EngineError) Error() string {
+	return e.Message
+}
+
+// NewEngineError creates a new engine error
+func NewEngineError(code, message string) *EngineError {
+	return &EngineError{Code: code, Message: message}
+}
+
+// publishtrade sends executed trade to trade.executed topic
 func (e *Engine) publishTrade(ctx context.Context, trade Trade) error {
 	payload, err := json.Marshal(trade)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	return e.producer.Publish(ctx, constants.TopicTradesExecuted, trade.ID, payload)
+}
+
+// publishTradeWithRetry sends executed trade with retry logic
+func (e *Engine) publishTradeWithRetry(ctx context.Context, trade Trade) error {
+	const maxRetries = 3
+	var lastErr error
+
+	for i := 0; i < maxRetries; i++ {
+		if err := e.publishTrade(ctx, trade); err != nil {
+			lastErr = err
+			e.log.Warn("publish trade retry", "attempt", i+1, "error", err)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(100 * time.Millisecond):
+				continue
+			}
+		}
+		return nil
+	}
+	return lastErr
 }
 
 // publish snap shot sends executed trade to trade.execute topic 
@@ -111,29 +157,42 @@ func parseType(t string) OrderType {
 	return Limit
 }
 
-// consume startes consuming form order.submitted from kafka topics and 
-// Each message is processed syncly per sumbol gorotines
-func (e *Engine) Consume(ctx context.Context, consumer *kafka.Consumer)  {
+// consume starts consuming from orders.submitted from kafka topics and
+// Each message is processed per symbol goroutines with offset commit
+func (e *Engine) Consume(ctx context.Context, consumer *kafka.Consumer) {
 	e.log.Info("engine consuming", "topic", constants.TopicOrdersSubmitted)
 
 	for {
-		select{
+		select {
 		case <-ctx.Done():
 			e.log.Info("engine shutting down")
 			return
 		default:
 			msg, err := consumer.ReadMessage(ctx)
-			if err != nil{
+			if err != nil {
 				e.log.Error("read message failed", "error", err)
 				continue
 			}
 
 			var order gRPC_order.OrderMessage
-			if err := proto.Unmarshal(msg.Value, &order); err != nil{
+			if err := proto.Unmarshal(msg.Value, &order); err != nil {
 				e.log.Error("unmarshal failed", "error", err)
+				if commitErr := consumer.CommitMessage(ctx, msg); commitErr != nil {
+					e.log.Error("commit failed after unmarshal error", "error", commitErr)
+				}
 				continue
 			}
-			e.ProcessOrder(ctx, &order)
+
+			// Process order and commit offset on success
+			if err := e.ProcessOrder(ctx, &order); err != nil {
+				e.log.Error("process order failed", "error", err)
+			}
+
+			// Commit offset after successful processing to prevent re-processing
+			if err := consumer.CommitMessage(ctx, msg); err != nil {
+				e.log.Error("commit message failed", "error", err)
+				continue
+			}
 		}
 	}
 }
