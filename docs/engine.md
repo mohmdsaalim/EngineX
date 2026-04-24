@@ -10,23 +10,23 @@ The Engine is the core matching engine that executes trades between BUY and SELL
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐               │
-│  │   Kafka      │─────▶│   Engine    │─────▶│   Kafka      │               │
-│  │ Consumer    │      │ (Matching)  │      │ Producer    │               │
-│  │ orders.sub  │      │             │      │ trades.exec │               │
+│  │   Kafka      │─────▶│   Engine     │────▶ │   Kafka      │               │
+│  │ Consumer     │      │ (Matching)   │      │ Producer     │               │
+│  │ orders.sub   │      │              │      │ trades.exec  │               │
 │  └──────────────┘      └──────────────┘      └──────────────┘               │
-│                              │                                            │
-│                              ▼                                            │
-│                     ┌──────────────┐                                     │
-│                     │ OrderBook   │◀──── One per symbol                   │
-│                     │ (B-Tree)    │                                     │
-│                     └──────────────┘                                     │
-│                            │                                              │
-│                   ┌───────┴───────┐                                      │
-│                   ▼               ▼                                      │
-│              ┌─────────┐     ┌─────────┐                                 │
-│              │  Bids   │     │  Asks   │                                 │
-│              │ (Buy)   │     │ (Sell)  │                                 │
-│              └─────────┘     └─────────┘                                 │
+│                              │                                              │
+│                              ▼                                              │
+│                     ┌──────────────┐                                        │
+│                     │ OrderBook    │◀──── One per symbol                    │
+│                     │ (B-Tree)     │                                        │
+│                     └──────────────┘                                        │
+│                            │                                                │
+│                   ┌──────-─┴───────┐                                        │
+│                   ▼                ▼                                        │
+│              ┌─────────┐     ┌─────────┐                                    │
+│              │  Bids   │     │  Asks   │                                    │
+│              │ (Buy)   │     │ (Sell)  │                                    │
+│              └─────────┘     └─────────┘                                    │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -170,14 +170,14 @@ PriceLevel { Price: 150000, Orders: [Order1, Order2, ...] }
 ## Order Status Flow
 ```
 ┌──────────┐     ┌───────────┐     ┌──────────┐     ┌────────────┐
-│ New      │────▶│  Open     │────▶│ Partial │────▶│ Filled    │
-│ Order    │     │ (on book) │     │ (some qty)│   │ (all qty) │
+│ New      │────▶│  Open     │────▶│ Partial  │────▶│ Filled     │
+│ Order    │     │ (on book) │     │(some qty)│     │ (all qty)  │
 └──────────┘     └───────────┘     └──────────┘     └────────────┘
                      │
                      ▼
               ┌────────────┐
               │ Cancelled  │
-              │           │
+              │            │
               └────────────┘
 ```
 
