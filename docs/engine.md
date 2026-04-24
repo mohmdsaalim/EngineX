@@ -10,14 +10,14 @@ The Engine is the core matching engine that executes trades between BUY and SELL
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐               │
-│  │   Kafka      │─────▶│   Engine     │────▶ │   Kafka      │               │
+│  │   Kafka      │─────▶│   Engine     │──-──▶│   Kafka      │               │
 │  │ Consumer     │      │ (Matching)   │      │ Producer     │               │
 │  │ orders.sub   │      │              │      │ trades.exec  │               │
 │  └──────────────┘      └──────────────┘      └──────────────┘               │
 │                              │                                              │
 │                              ▼                                              │
 │                     ┌──────────────┐                                        │
-│                     │ OrderBook    │◀──── One per symbol                    │
+│                     │ OrderBook    │ ◀──── One per symbol                    │
 │                     │ (B-Tree)     │                                        │
 │                     └──────────────┘                                        │
 │                            │                                                │
