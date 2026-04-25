@@ -8,60 +8,106 @@ EngineX is a real-time order matching engine capable of processing 100k+ orders/
 
 ## Architecture
 
+EngineX follows an event-driven microservices architecture where services communicate primarily through Apache Kafka for loose coupling, durability, and scalability.
+
+### High-Level Architecture
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
 │                              EngineX System                                        │
 ├─────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                   │
-│    ┌──────────┐      ┌──────────┐      ┌──────────┐      ┌──────────┐        │
-│    │  Users    │      │  Risk    │      │   Auth   │      │  Market  │        │
-│    │          │      │ Service  │      │ Service  │      │   Data   │        │
-│    └────┬─────┘      └────┬─────┘      └────┬─────┘      └────┬─────┘        │
-│         │                  │                  │                  │               │
-│         └──────────────────┴────────┬────────┴──────────────────┘               │
-│                                     │                                            │
-│                                     ▼                                            │
-│                            ┌───────────────┐                                     │
-│                            │   Gateway    │                                     │
-│                            │  (REST/gRPC) │                                     │
-│                            └───────┬───────┘                                     │
-│                                    │                                             │
-│                    ┌───────────────┼───────────────┐                            │
-│                    │               │               │                             │
-│                    ▼               ▼               ▼                             │
-│           ┌─────────────┐ ┌─────────────┐ ┌─────────────┐                         │
-│           │  orders.    │ │            │ │            │                         │
-│           │ submitted  │ │            │ │            │                         │
-│           └──────┬──────┘ │            │ │            │                         │
-│                  │         │            │ │            │                         │
-│                  └─────────┼───────────┼─────────────┘                          ���
-│                            ▼                                                ▼       │
-│                     ┌──────────────┐                    ┌──────────────┐        │
-│                     │   Engine    │                    │  WSHub      │        │
-│                     │  (Matching) │                    │ (WebSocket) │        │
-│                     └──────┬───────┘                    └──────┬───────┘        │
-│                            │                                  │                  │
-│                ┌───────────┼───────────┐                      │                  │
-│                ▼           ▼           ▼                      │                  │
-│       ┌────────────┐ ┌────────────┐ ┌────────────┐          │                  │
-│       │  trades.   │ │  order.  │ │ order.   │          │                  │
-│       │ executed  │ │ updated │ │ updates │◀─────────┘                  │
-│       └─────┬─────┘ └────┬─────┘ └────┬─────┘                               │
-│             │           │           │                                       │
-│             └───────────┼───────────┘                                       │
-│                         ▼                                                 │
-│                  ┌──────────────┐                                          │
-│                  │ Executor   │                                          │
-│                  │(Settlement)│                                          │
-│                  └──────┬─────┘                                          │
-│                         │                                                 │
-│                         ▼                                                 │
-│                  ┌──────────────┐                                          │
-│                  │  Postgres   │                                          │
-│                  └─────────────┘                                          │
-│                                                                                   │
+│                                                                                     │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐          │
+│  │    Users     │   │    Risk     │   │    Auth     │   │   Market    │          │
+│  │  (Clients)   │   │   Service   │   │   Service   │   │    Data     │          │
+│  └──────┬───────┘   └──────┬───────┘   └──────┬───────┘   └──────┬───────┘          │
+│         │                  │                  │                  │                  │
+│         └──────────────────┴────────┬────────┴──────────────────┘                  │
+│                                     │                                              │
+│                                     ▼                                              │
+│                            ┌────────────────┐                                      │
+│                            │    Gateway     │                                      │
+│                            │  REST / gRPC   │                                      │
+│                            └────────┬───────┘                                      │
+│                                     │                                              │
+│                                     │ HTTP/gRPC                                     │
+│                                     ▼                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐   │
+│  │                         Apache Kafka                                        │   │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐              │   │
+│  │  │ orders.submitted│  │trades.executed  │  │orderbook.updated│              │   │
+│  │  │   (Topic)       │  │   (Topic)       │  │   (Topic)       │              │   │
+│  │  └────────┬────--──┘  └──────┬──--───--─┘  └────┬────------──┘              │   │
+│  │           │                  │                  │                           │   │
+│  └───────────┼──────────────────┼──────────────────┼─────────────────────---────┘   │
+│              │                  │                  │                           │
+│              ▼                  ▼                  │                           │
+│  ┌────────────────┐  ┌────────────────┐         │                           │
+│  │    Engine      │  │   Executor     │         │                           │
+│  │  (Matching)    │  │  (Settlement)  │         │                           │
+│  │  Consumer     │  │   Consumer     │         │                           │
+│  └───────┬───────┘  └───────┬───────┘         │                           │
+│          │                  │                 │                           │
+│          │                  │                 │                           │
+│          ▼                  ▼                 │                           │
+│  ┌────────────────┐  ┌──────────────┐         │                           │
+│  │   Postgres     │  │  Postgres    │◀────────┘                           │
+│  │  (Orders)      │  │  (Trades)    │                                      │
+│  └────────────────┘  └──────────────┘                                      │
+│                                                                                     │
+│          │                                                               │
+│          └───────────────────────┐                                          │
+│                                  │                                          │
+│                                  ▼                                          │
+│                       ┌────────────────┐                                    │
+│                       │     WSHub      │                                    │
+│                       │  (WebSocket)   │                                    │
+│                       └───────┬────────┘                                    │
+│                               │                                             │
+│                               ▼                                             │
+│                       ┌────────────────┐                                    │
+│                       │     Redis      │                                    │
+│                       │  (Cache/PubSub)│                                    │
+│                       └────────────────┘                                    │
+│                                                                                     │
 └─────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+### Data Flow
+
+```
+1. Order Submission:
+   Client → Gateway (REST) → Kafka (orders.submitted) → Engine
+
+2. Order Matching:
+   Engine reads from Kafka → Matches against Order Book → 
+   Produces trades.executed → Executor
+   Produces orderbook.updated → WSHub
+
+3. Trade Settlement:
+   Executor reads trades.executed → Postgres (trades table)
+
+4. Real-time Updates:
+   WSHub reads orderbook.updated → Redis PubSub → WebSocket Clients
+```
+
+### Component Responsibilities
+
+| Component | Type | Description |
+|------------|------|-------------|
+| Gateway | Service | HTTP/gRPC entry point, validates and publishes orders to Kafka |
+| Auth Service | gRPC | User authentication, JWT token issuance and validation |
+| Risk Service | gRPC | Pre-trade risk checks (position limits, exposure) |
+| Engine | Kafka Consumer | B-Tree order book, price-time priority matching |
+| Executor | Kafka Consumer | Trade settlement, persists trades to database |
+| WSHub | Service | Real-time market depth via WebSocket |
+
+### Key Design Decisions
+
+- **Kafka as Backbone**: All inter-service communication flows through Kafka for durability and ability to replay
+- **B-Tree Order Book**: O(log n) lookup for efficient price-time priority matching
+- **Event-Driven**: Services are decoupled and can scale independently
+- **Redis for PubSub**: Low-latency real-time updates to WebSocket clients
 
 ## Services
 
