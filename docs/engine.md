@@ -236,5 +236,5 @@ Order Receive → Validate → Get/Create OrderBook → Match
                     ┌───────────────────────┴───────────────────────┐
                     ▼                                               ▼
               publishTrade()                                  addToBook()
-              (to Kafka)                                        (if unfilled)
+              (to Kafka)                                      (if unfilled)
 ```
