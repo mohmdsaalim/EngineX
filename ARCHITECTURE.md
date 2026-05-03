@@ -41,3 +41,13 @@ Integer comparison is always exact.
 ✅ Step 12 — trades.executed has trade message
 ✅ Step 13 — Trade in Postgres, balances updated, orders FILLED
 ✅ Step 14 — Redis has trade:* and order:seen:* keys
+
+
+To run the integration tests:
+go test ./test/integration/... -v
+For more detailed output with coverage:
+go test ./test/integration/... -v -cover
+To run only engine tests:
+go test ./test/integration/... -run TestEngine -v
+To run only executor tests:
+go test ./test/integration/... -run TestExecutor -v
