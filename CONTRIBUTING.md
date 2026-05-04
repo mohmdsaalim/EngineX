@@ -16,7 +16,7 @@ core engine visual flow diagram and unserstd proper workflow
 
 
 commands
-
+  
 1. to check user inisde dock-> pg
 docker exec -it engine_postgres psql -U engine_user -d engine_db \
   -c "SELECT id, email, full_name, created_at FROM users;"
