@@ -56,15 +56,15 @@ func (o *Order ) IsFilled() bool {
 
 // Trade represents an executed match between two orders.
 type Trade struct {
-	ID          string
-	BuyOrderID  string
-	SellOrderID string
-	BuyerID     string
-	SellerID    string
-	Symbol      string
-	Price       int64
-	Quantity    int64
-	ExecutedAt  time.Time
+	ID          string    `json:"id"`
+	BuyOrderID  string    `json:"buy_order_id"`
+	SellOrderID string    `json:"sell_order_id"`
+	BuyerID     string    `json:"buyer_id"`
+	SellerID    string    `json:"seller_id"`
+	Symbol      string    `json:"symbol"`
+	Price       int64     `json:"price"`
+	Quantity    int64     `json:"quantity"`
+	ExecutedAt  time.Time `json:"executed_at"`
 }
 
 // DepthLevel represents one price level in order book snapshot.

@@ -2,30 +2,35 @@ package gateway
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	gRPCauth "github.com/mohmdsaalim/EngineX/api/gen/gRPC_auth"
 	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_order"
 	"github.com/mohmdsaalim/EngineX/api/gen/gRPC_risk"
+	"github.com/mohmdsaalim/EngineX/internal/repository/generated"
 	"github.com/mohmdsaalim/EngineX/pkg/apperr"
 	"github.com/mohmdsaalim/EngineX/pkg/response"
 	"google.golang.org/protobuf/proto"
 )
 
 type Handler struct {
-	authClient gRPCauth.AuthServiceClient
-	riskClient gRPC_risk.RiskServiceClient
+	authClient  gRPCauth.AuthServiceClient
+	riskClient  gRPC_risk.RiskServiceClient
 	KafkaProducer *KafkaProducer
+	repo       *repository.Queries
 }
 
-func NewHandler(riskClient gRPC_risk.RiskServiceClient,KafkaProducer *KafkaProducer, authClient gRPCauth.AuthServiceClient) *Handler {
+func NewHandler(riskClient gRPC_risk.RiskServiceClient, KafkaProducer *KafkaProducer, authClient gRPCauth.AuthServiceClient, repo *repository.Queries) *Handler {
 	return &Handler{
-		authClient: authClient,
-		riskClient: riskClient,
+		authClient:  authClient,
+		riskClient:  riskClient,
 		KafkaProducer: KafkaProducer,
+		repo:       repo,
 	}
 }
 
@@ -81,6 +86,12 @@ func (h *Handler) SubmitOrder(c *gin.Context)  {
 
 	// get userID from JWT midleware context
 	userID := c.GetString("userID")
+	log.Printf("[GATEWAY] UserID from JWT: %s", userID)
+
+	if userID == "" {
+		response.Fail(c, apperr.New(apperr.CodeUnauthorized, "invalid token: no user ID"))
+		return
+	}
 
 	// generate unique orderID
 	orderID := uuid.New().String()
@@ -106,11 +117,43 @@ if err != nil{
 }
 
 if !riskResp.Approved{
-	response.Fail(c, apperr.New(apperr.CodeForbidden, riskResp.RejectReason))
-	return
-}
+		response.Fail(c, apperr.New(apperr.CodeForbidden, riskResp.RejectReason))
+		return
+	}
 
-// chnaged JSON to Protobufs
+	// Validate user exists in database before creating order
+	dbCtx, dbCancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer dbCancel()
+
+	userUUID := toUUID(userID)
+	existingUser, err := h.repo.GetUserByID(dbCtx, userUUID)
+	if err != nil || !existingUser.ID.Valid {
+		log.Printf("[GATEWAY] User not found in database: %s", userID)
+		response.Fail(c, apperr.New(apperr.CodeUnauthorized, "user not found"))
+		return
+	}
+	log.Printf("[GATEWAY] User validated: %s (exists in DB)", userID)
+
+	// Save order to DB before publishing to Kafka
+	orderUUID := toUUID(orderID)
+	createdOrder, err := h.repo.CreateOrder(dbCtx, repository.CreateOrderParams{
+		ID:        orderUUID,
+		UserID:   toUUID(userID), // Use userID from JWT context
+		Symbol:  req.Symbol,
+		Side:    repository.OrderSide(req.Side),
+		Type:    repository.OrderType(req.Type),
+		Price:   req.Price,
+		Quantity: req.Quantity,
+	})
+	if err != nil {
+		log.Printf("[GATEWAY] Failed to save order: %v", err)
+		response.Fail(c, apperr.New(apperr.CodeInternal, "failed to save order"))
+		return
+	}
+
+	log.Printf("[GATEWAY] Order saved to DB | order_id: %s", createdOrder.ID)
+
+	// chnaged JSON to Protobufs
 payload, err := proto.Marshal(&gRPC_order.OrderMessage{
 	OrderId: orderID,
 	UserId: userID,
@@ -203,4 +246,10 @@ func (h *Handler) Login(c *gin.Context) {
 		"access_token":resp.AccessToken,
 		"refresh_token":resp.RefreshToken,
 	})
+}
+
+func toUUID(s string) pgtype.UUID {
+	var u pgtype.UUID
+	u.Scan(s)
+	return u
 }

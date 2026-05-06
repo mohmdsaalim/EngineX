@@ -12,12 +12,13 @@ import (
 )
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (user_id, symbol, side, type, price, quantity, status)
-VALUES ($1, $2, $3, $4, $5, $6, 'OPEN')
+INSERT INTO orders (id, user_id, symbol, side, type, price, quantity, status)
+VALUES ($1, $2, $3, $4, $5, $6, $7, 'OPEN')
 RETURNING id, user_id, symbol, side, type, price, quantity, filled_qty, status, created_at, updated_at
 `
 
 type CreateOrderParams struct {
+	ID       pgtype.UUID `json:"id"`
 	UserID   pgtype.UUID `json:"user_id"`
 	Symbol   string      `json:"symbol"`
 	Side     OrderSide   `json:"side"`
@@ -28,6 +29,7 @@ type CreateOrderParams struct {
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
 	row := q.db.QueryRow(ctx, createOrder,
+		arg.ID,
 		arg.UserID,
 		arg.Symbol,
 		arg.Side,

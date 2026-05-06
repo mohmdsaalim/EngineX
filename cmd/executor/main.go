@@ -77,6 +77,8 @@ func main() {
 				continue
 			}
 
+			log.Info("[EXECUTOR] Received trade from Kafka", "message_key", msg.Key)
+
 			// Process trade - commit regardless of result to prevent infinite retry
 			// The executor has idempotency protection in DB
 			if err := executor.ProcessTrade(ctx, msg.Value); err != nil {

@@ -15,6 +15,7 @@ import (
 	"github.com/mohmdsaalim/EngineX/internal/config"
 	"github.com/mohmdsaalim/EngineX/internal/gateway"
 	"github.com/mohmdsaalim/EngineX/internal/kafka"
+	repository "github.com/mohmdsaalim/EngineX/internal/repository/generated"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -22,7 +23,18 @@ import (
 func main() {
     godotenv.Load()
     cfg := config.Load()
-// connect to auth service via grpc
+    
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    // 1. Postgres connection
+    pool, err := config.NewPgxPool(ctx, cfg.PostgresDSN)
+    if err != nil {
+        log.Fatalf("postgres connection failed: %v", err)
+    }
+    defer pool.Close()
+
+    // 2. connect to auth service via grpc
     authConn, err := grpc.NewClient(
         "localhost"+cfg.AuthGRPCPort,
         grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -54,8 +66,11 @@ func main() {
 	
 	kafkaProducer := gateway.NewKafkaProducer(baseProducer)
 
-	// 5. Wire handler
-	handler := gateway.NewHandler(riskClient, kafkaProducer, authClient)
+	// 5. Repository
+	q := repository.New(pool)
+
+	// 6. Wire handler
+	handler := gateway.NewHandler(riskClient, kafkaProducer, authClient, q)
 
 	// 6. Setup Gin
 	r := gin.Default()

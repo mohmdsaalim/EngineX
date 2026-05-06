@@ -74,6 +74,10 @@ func (e *Engine) ProcessOrder(ctx context.Context, msg *gRPC_order.OrderMessage)
 	e.log.Info("order processed", "order_id", order.ID, "symbol", order.Symbol, "trades", len(trades))
 	// Publish each trade to trades.executed
 	for _, trade := range trades {
+		if trade.BuyOrderID == "" || trade.SellOrderID == "" {
+			e.log.Error("skipping trade with empty order IDs", "trade_id", trade.ID)
+			continue
+		}
 		if err := e.publishTradeWithRetry(ctx, trade); err != nil {
 			e.log.Error("publish trade failed", "error", err)
 		}
@@ -182,6 +186,8 @@ func (e *Engine) Consume(ctx context.Context, consumer *kafka.Consumer) {
 				}
 				continue
 			}
+
+			e.log.Info("[ENGINE] Received order from Kafka", "order_id", order.OrderId, "symbol", order.Symbol, "side", order.Side)
 
 			// Process order and commit offset on success
 			if err := e.ProcessOrder(ctx, &order); err != nil {

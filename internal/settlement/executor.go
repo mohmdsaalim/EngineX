@@ -57,7 +57,23 @@ func (e *Executor) ProcessTrade(ctx context.Context, raw []byte) error {
 		return fmt.Errorf("invalid trade: %w", err)
 	}
 
-	// 3. Idempotency check — skip if already processed
+	// 3. Validate orders exist in DB before proceeding
+	buyOrderUUID := toUUID(trade.BuyOrderID)
+	sellOrderUUID := toUUID(trade.SellOrderID)
+
+	_, err := e.q.GetOrderByID(ctx, buyOrderUUID)
+	if err != nil {
+		e.log.Error("buy order not found in DB", "order_id", trade.BuyOrderID, "error", err)
+		return fmt.Errorf("buy order not found: %w", err)
+	}
+
+	_, err = e.q.GetOrderByID(ctx, sellOrderUUID)
+	if err != nil {
+		e.log.Error("sell order not found in DB", "order_id", trade.SellOrderID, "error", err)
+		return fmt.Errorf("sell order not found: %w", err)
+	}
+
+	// 4. Idempotency check — skip if already processed
 	processed, err := e.redis.IsTradeProcessed(ctx, trade.ID)
 	if err != nil {
 		return fmt.Errorf("idempotency check: %w", err)
