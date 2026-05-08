@@ -253,3 +253,4 @@ func toUUID(s string) pgtype.UUID {
 	u.Scan(s)
 	return u
 }
+
