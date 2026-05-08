@@ -159,3 +159,8 @@ func buildDepthMessage(symbol string, raw []byte) []byte {
 	})
 	return msg
 }
+
+
+//       -> step2/1 -> 
+// step 1-> step2/2 -> step3
+//       -> step2/3 ->
