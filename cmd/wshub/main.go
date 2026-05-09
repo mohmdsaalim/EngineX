@@ -29,7 +29,7 @@ func main() {
 	)
 	defer consumer.Close()
 
-	// 2. Hub
+	// 2. Hub 
 	hub := wshub.NewHub()
 
 	// 3. Start Kafka consumer in background
